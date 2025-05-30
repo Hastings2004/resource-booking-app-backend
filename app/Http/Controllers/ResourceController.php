@@ -6,7 +6,9 @@ use App\Models\Resource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreResourceRequest; // For validation of new resources
 use App\Http\Requests\UpdateResourceRequest; // For validation of updated resources
+use App\Mail\Welcome;
 use Illuminate\Support\Facades\Auth; // To access the authenticated user
+use Illuminate\Support\Facades\Mail;
 
 class ResourceController extends Controller
 {
@@ -15,7 +17,8 @@ class ResourceController extends Controller
      * All authenticated users can view resources.
      */
     public function index()
-    {
+    { 
+         //Mail::to('hastingschitenje81@gmail.com')->send(new Welcome());  
         // No specific role check needed here, as all authenticated users can view resources.
         $resources = Resource::all();
         
@@ -36,7 +39,15 @@ class ResourceController extends Controller
         }
 
         // The StoreResourceRequest already handles validation
-        $resource = Resource::create($request->validated());
+        $fields = $request -> validate([
+            "name"=>['required', 'min:10', 'max:100'],
+            "description" => ['required', 'min:15', 'max:255'],
+            "location" => ['required', 'min:10', 'max:100'],
+            "capacity" => ['required', 'min:10', 'number'],
+            "status" => ['required'],
+            "image" => ['required', 'min:10', ' ']
+        ]);
+        $resource = Resource::create($fields);
 
         return response()->json([
             'message' => 'Resource created successfully.',
@@ -60,15 +71,26 @@ class ResourceController extends Controller
      */
     public function update(UpdateResourceRequest $request, Resource $resource)
     {
-        $user = Auth::user();
+       $user = Auth::user();
 
         // Check if the authenticated user has the 'admin' role
         if (!$user->hasRole('admin')) {
-            return response()->json(['message' => 'Unauthorized to update resources.'], 403);
+            return response()->json(['message' => 'Unauthorized to create resources.'], 403);
         }
 
+        // The StoreResourceRequest already handles validation
+        $fields = $request -> validate([
+            "name"=>['required', 'min:10', 'max:100'],
+            "description" => ['required', 'min:15', 'max:255'],
+            "location" => ['required', 'min:10', 'max:100'],
+            "capacity" => ['required', 'min:10', 'number'],
+            "status" => ['required'],
+            "image" => ['required', 'min:10', ' ']
+        ]);
+        
+
         // The UpdateResourceRequest already handles validation
-        $resource->update($request->validated());
+        $resource->update($fields);
 
         return response()->json([
             'message' => 'Resource updated successfully.',
@@ -94,7 +116,7 @@ class ResourceController extends Controller
             return response()->json(['message' => 'Resource deleted successfully.'], 200);
         } catch (\Exception $e) {
             // Log the error for debugging purposes (optional, but recommended)
-            \Log::error('Resource deletion failed: ' . $e->getMessage(), ['resource_id' => $resource->id]);
+            //Log::error('Resource deletion failed: ' . $e->getMessage(), ['resource_id' => $resource->id]);
             return response()->json(['message' => 'An error occurred while deleting the resource.'], 500);
         }
     }

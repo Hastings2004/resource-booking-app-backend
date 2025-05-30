@@ -16,8 +16,9 @@ return new class extends Migration
             $table->string('name');
             $table->string('description'); 
             $table->string('location'); 
-            $table->string('capacity'); 
-            $table->string('image'); 
+            $table->integer('capacity'); 
+            $table->string("status")->default("Available");
+            $table->string('image')->nullable(); 
             $table->timestamps();
         });
     }

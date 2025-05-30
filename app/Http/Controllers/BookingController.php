@@ -18,17 +18,28 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-
-        if ($user->hasRole('admin')) {
-            // Admins can see all bookings
-            $bookings = Booking::with(['user', 'resource'])->latest()->get();
-        } else{
-            // Other users (staff, student) only see their own bookings
-            $bookings = $user->bookings()->with('resource')->latest()->get();
+       if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        $user = Auth::user(); // Get the authenticated user
+
+        if ($user->user_type === 'admin') {
+            // Admin can see all bookings
+            $bookings = Booking::with(['user', 'resource'])
+                                ->latest()
+                                ->get();
+        } else {
+            // Staff and Students (and any other non-admin) can only see their own bookings
+            $bookings = Booking::where('user_id', $user->id)
+                                ->with(['user', 'resource'])
+                                ->latest()
+                                ->get();
+        }
+
+        // Return the bookings
         return response()->json($bookings);
+    
     }
 
     /**
@@ -104,7 +115,7 @@ class BookingController extends Controller
         $user = Auth::user();
 
         // Allow if it's their own booking OR if the user is an admin
-        if ($user->id !== $booking->user_id && !$user->hasRole('admin')) {
+        if ($user->id !== $booking->user_id && $user->user_type != 'admin') {
             return response()->json(['message' => 'Unauthorized to view this booking.'], 403);
         }
 

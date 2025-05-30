@@ -16,7 +16,7 @@ class Resource extends Model
         'description',
         'location',
         'capacity',
-        'image',
+        'status',
     ];
 
      public function bookings(): HasMany
