@@ -48,7 +48,7 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
-       
+        
         try {
             $validatedData = $request->validate([
                 'resource_id' => 'required|exists:resources,id',
@@ -64,20 +64,29 @@ class BookingController extends Controller
             }
 
             
-            $conflictingBookings = Booking::where('resource_id', $validatedData['resource_id'])
+            // Retrieve the actual conflicting booking, not just count
+            $conflictingBooking = Booking::where('resource_id', $validatedData['resource_id'])
                 ->where(function ($query) use ($validatedData) {
                     $query->whereBetween('start_time', [$validatedData['start_time'], $validatedData['end_time']])
-                          ->orWhereBetween('end_time', [$validatedData['start_time'], $validatedData['end_time']])
-                          ->orWhere(function ($q) use ($validatedData) {
-                              $q->where('start_time', '<=', $validatedData['start_time'])
+                        ->orWhereBetween('end_time', [$validatedData['start_time'], $validatedData['end_time']])
+                        ->orWhere(function ($q) use ($validatedData) {
+                            $q->where('start_time', '<=', $validatedData['start_time'])
                                 ->where('end_time', '>=', $validatedData['end_time']);
-                          });
+                        });
                 })
                 ->whereIn('status', ['pending', 'approved'])
-                ->count();
+                ->first(); // Use first() instead of count()
 
-            if ($resource->capacity == 1 && $conflictingBookings > 0) {
-                return response()->json(['message' => 'Resource is already booked or unavailable for the requested time slot.'], 409);
+            if ($resource->capacity == 1 && $conflictingBooking) { // Check if a conflicting booking exists
+                // Format the times for user-friendly display
+                $bookedStart = Carbon::parse($conflictingBooking->start_time)->format('Y-m-d H:i');
+                $bookedEnd = Carbon::parse($conflictingBooking->end_time)->format('Y-m-d H:i');
+
+                return response()->json([
+                    'message' => "Resource is already booked from {$bookedStart} to {$bookedEnd}.",
+                    'booked_from' => $bookedStart,
+                    'booked_to' => $bookedEnd
+                ], 409);
             }
 
             $booking = Auth::user()->bookings()->create([
@@ -133,7 +142,7 @@ class BookingController extends Controller
 
         // Check if the user is authorized to update this specific booking
         $isOwner = ($user->id === $booking->user_id);
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = $user->user_type === 'admin';
 
         // Only allow owner to update if booking is pending or approved
         // Admins can always update
@@ -169,21 +178,29 @@ class BookingController extends Controller
 
 
             // Conflict detection logic (remains the same)
-            $conflictingBookings = Booking::where('resource_id', $booking->resource_id)
+            $conflictingBooking = Booking::where('resource_id', $booking->resource_id)
                 ->where('id', '!=', $booking->id)
                 ->where(function ($query) use ($validatedData) {
                     $query->whereBetween('start_time', [$validatedData['start_time'], $validatedData['end_time']])
-                          ->orWhereBetween('end_time', [$validatedData['start_time'], $validatedData['end_time']])
-                          ->orWhere(function ($q) use ($validatedData) {
-                              $q->where('start_time', '<=', $validatedData['start_time'])
+                        ->orWhereBetween('end_time', [$validatedData['start_time'], $validatedData['end_time']])
+                        ->orWhere(function ($q) use ($validatedData) {
+                            $q->where('start_time', '<=', $validatedData['start_time'])
                                 ->where('end_time', '>=', $validatedData['end_time']);
-                          });
+                        });
                 })
                 ->whereIn('status', ['pending', 'approved'])
-                ->count();
+                ->first(); // Use first() instead of count()
 
-            if ($booking->resource->capacity == 1 && $conflictingBookings > 0) {
-                return response()->json(['message' => 'Resource is already booked or unavailable for the updated time slot.'], 409);
+            if ($booking->resource->capacity == 1 && $conflictingBooking) {
+                 // Format the times for user-friendly display
+                $bookedStart = Carbon::parse($conflictingBooking->start_time)->format('Y-m-d H:i');
+                $bookedEnd = Carbon::parse($conflictingBooking->end_time)->format('Y-m-d H:i');
+
+                return response()->json([
+                    'message' => "Resource is already booked from {$bookedStart} to {$bookedEnd}.",
+                    'booked_from' => $bookedStart,
+                    'booked_to' => $bookedEnd
+                ], 409);
             }
 
             $booking->update($validatedData);
@@ -215,7 +232,7 @@ class BookingController extends Controller
         $user = Auth::user();
 
         $isOwner = ($user->id === $booking->user_id);
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = $user->user_type === 'admin';
 
         // Only allow owner to delete if booking is pending or approved
         // Admins can always delete
