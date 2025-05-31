@@ -34,7 +34,7 @@ class ResourceController extends Controller
         $user = Auth::user();
 
         // Check if the authenticated user has the 'admin' role
-        if (!$user->hasRole('admin')) {
+        if ($user->user_type != 'admin') {
             return response()->json(['message' => 'Unauthorized to create resources.'], 403);
         }
 
@@ -74,7 +74,7 @@ class ResourceController extends Controller
        $user = Auth::user();
 
         // Check if the authenticated user has the 'admin' role
-        if (!$user->hasRole('admin')) {
+        if ($user->user_type != 'admin') {
             return response()->json(['message' => 'Unauthorized to create resources.'], 403);
         }
 
@@ -107,7 +107,7 @@ class ResourceController extends Controller
         $user = Auth::user();
 
         // Check if the authenticated user has the 'admin' role
-        if (!$user->hasRole('admin')) {
+        if ($user->user_type != 'admin') {
             return response()->json(['message' => 'Unauthorized to delete resources.'], 403);
         }
 
