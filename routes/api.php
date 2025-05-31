@@ -18,4 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::apiResource('resources', ResourceController::class);
     Route::apiResource('bookings', BookingController::class);
+    Route::put('/users/{user}', [AuthController::class, 'update']);
+    Route::get('/users', [AuthController::class, 'index']);
+    Route::delete('/users/{user}', [AuthController::class, 'destroy']);
 });
