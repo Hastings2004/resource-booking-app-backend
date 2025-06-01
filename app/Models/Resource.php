@@ -23,4 +23,13 @@ class Resource extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+     public function scopeSearch($query, $keyword)
+    {
+        if ($keyword) {
+            $query->where('name', 'like', '%' . $keyword . '%')
+                  ->orWhere('description', 'like', '%' . $keyword . '%');
+        }
+        return $query;
+    }
 }
