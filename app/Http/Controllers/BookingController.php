@@ -38,7 +38,10 @@ class BookingController extends Controller
         }
 
         // Return the bookings
-        return response()->json($bookings);
+        return response()->json([
+            "success"=>true,
+            "bookings"=> $bookings
+        ]);
     
     }
 

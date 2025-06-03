@@ -20,7 +20,10 @@ class Booking extends Model
         "status",
         "purpose"
     ];
-
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+    ];
     public function user(): BelongsTo{
         return $this -> belongsTo(User::class);
     }

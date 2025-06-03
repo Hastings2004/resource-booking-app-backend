@@ -22,7 +22,10 @@ class ResourceController extends Controller
         // No specific role check needed here, as all authenticated users can view resources.
         $resources = Resource::all();
         
-        return response()->json($resources);
+        return response()->json([
+            "success"=> true,
+            "resources"=>$resources
+        ]);
     }
 
     /**

@@ -14,32 +14,40 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     //login method
+public function login(Request $request){
+    $request->validate([
+        'email'=> 'required|max:255|email|exists:users',
+        'password'=> 'required',
+    ]);
 
-    public function login(Request $request){
-        $request->validate([
-            'email'=> 'required|max:255|email|exists:users',
-            'password'=> 'required',
-        ]);
+    $user = User::where('email', $request->email)->first();
 
-        $user = User::where('email', $request->email)->first();
-
-        if(!$user || !Hash::check($request->password, $user->password)){
-            return [
-                'errors'=> [
-                    'email'=> [
-                        'Invalid credentials'
-                    ]
-                ]
-            ];
-        }
-
-        $token = $user -> createToken($user -> first_name) ;
-
-        return [
-            'user'=> $user,
-            'token'=> $token -> plainTextToken,
-        ];
+    if(!$user || !Hash::check($request->password, $user->password)){
+        return response()->json([
+            'message' => 'Invalid credentials'
+        ], 401);
     }
+
+    // Load user with roles
+    $user->load('roles');
+    
+    // Get the first role ID (assuming user has at least one role)
+    $roleId = $user->roles->first() ? $user->roles->first()->id : null;
+    
+    $token = $user->createToken($user->first_name);
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->first_name . ' ' . $user->last_name,
+            'email' => $user->email,
+            'role_id' => $roleId,
+            // 'user_type' => $user->user_type, // Include this too
+        ],
+        'success' => true,
+        'token' => $token->plainTextToken,
+    ], 200);
+}
 
 
     //register method
@@ -47,7 +55,7 @@ class AuthController extends Controller
         $field = $request->validate([
             'first_name'=> 'required|max:255',
             'last_name'=> 'required|max:255',
-            'user_type'=> 'required|exit',
+            'user_type'=> 'required',
             'email'=> 'required|max:255|email|unique:users',
             'password'=> 'required|confirmed|min:6',
         ]);
@@ -60,7 +68,7 @@ class AuthController extends Controller
         if ($role) {
             $user->roles()->attach($role->id); // This is the line that performs the role assignment
         } else {
-            return ['message'=>"role not found"]; // This means the role 'student' or 'staff' doesn't exist in your 'roles' table
+           return ['message'=>"role not found"]; // This means the role 'student' or 'staff' doesn't exist in your 'roles' table
         }
 
         $token = $user->createToken($request->first_name);
@@ -69,7 +77,7 @@ class AuthController extends Controller
 
         return [
             'user'=> $user,
-            'success'=> 'user created successfully',
+            'success'=> true,
             'token'=> $token->plainTextToken, // Return the token for API usage
         ];
     }
