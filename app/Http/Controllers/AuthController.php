@@ -103,14 +103,26 @@ public function login(Request $request){
      */
     public function index(Request $request)
     {
-        // Check if the authenticated user is an admin
-        if (Auth::check() && Auth::user()->user_type === 'admin') {
-            $users = User::all(); // Fetch all users
-            return response()->json(['users' => $users], 200);
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // If not authenticated or not an admin, return unauthorized response
-        return response()->json(['message' => 'Unauthorized to view users.'], 403); // 403 Forbidden
+        $user = Auth::user();
+
+        if ($user->user_type === 'admin') {
+            // Admin can see all users (if that's the intended use of this endpoint)
+            $users = User::all();
+            return response()->json([
+                'success' => true,
+                'users' => $users // Changed 'user' to 'users' to reflect it's a collection
+            ], 200);
+        } else {
+            // Non-admin users see only their own profile
+            return response()->json([
+                'success' => true,
+                'user' => $user // This will be a single user object
+            ], 200);
+        }
     }
 
     public function update(Request $request, User $user)

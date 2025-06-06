@@ -70,4 +70,9 @@ class User extends Authenticatable
         return $this-> hasMany(UserRole::class);
     }
 
+    public function notifications():HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
 }

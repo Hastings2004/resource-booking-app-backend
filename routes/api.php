@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ResourceSearchController;
 use App\Http\Controllers\UserController;
@@ -34,14 +35,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/dashboard-stats', [DashboardController::class, 'index']);
 
+    Route::get('/user/upcoming-booking', [BookingController::class, 'getUserBookings']);
+
+    Route::get('/user/bookings', [BookingController::class, 'getUserBookings']);  
+
     Route::get('/resources/search', [ResourceSearchController::class, 'search']);
 
     Route::get('/resources/{id}', [ResourceSearchController::class, 'show']);
 
-    Route::get('users', [UserController::class, 'index']);
+    Route::get('/users', [UserController::class, 'index']);
+
+    Route::get('/profile', [UserController::class, 'getProfile']);
 
     Route::get('/user/notification-preferences', [UserNotificationPreferenceController::class, 'index']);
 
     Route::put('/user/notification-preferences', [UserNotificationPreferenceController::class, 'update']);
+
+    Route::apiResource('/notifications', NotificationController::class); 
+
+    Route::post('bookings/check-availability', [BookingController::class, 'checkAvailability']);
+
+    Route::post('/bookings/{bookingId}/cancel', [BookingController::class, 'cancelBooking']);
+
+    Route::get('/resources/{resourceId}/availability', [BookingController::class, 'getResourceAvailability']);
 
 });
